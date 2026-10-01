@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+*.tsbuildinfo
+.env
+.env.local
+data
+*.log
+# Original apps stay local. Each has its own git history, and ShivWeb
+# contains live API keys and mailbox credentials.
+/AdminFinder/
+/EmailWarmup/
+/ShivWeb/

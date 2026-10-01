@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink-950: #0c0a08;
+  --color-ink-900: #14110e;
+  --color-ink-800: #1c1814;
+  --color-ink-700: #2a241e;
+  --color-ink-600: #3d342b;
+  --color-ember-50: #fff7ed;
+  --color-ember-100: #ffedd4;
+  --color-ember-300: #f5b56a;
+  --color-ember-400: #f09a3e;
+  --color-ember-500: #e07a1f;
+  --color-ember-600: #c45f12;
+  --color-parchment-50: #faf6f0;
+  --color-parchment-100: #f3ebe0;
+  --color-parchment-300: #d4c4ae;
+  --color-parchment-400: #b8a48c;
+  --color-parchment-500: #8f7d68;
+  --font-sans: var(--font-outfit), system-ui, sans-serif;
+  --font-display: var(--font-newsreader), Georgia, serif;
+  --shadow-glow: 0 0 40px -8px rgba(224, 122, 31, 0.35);
+  --shadow-card: 0 18px 40px -24px rgba(0, 0, 0, 0.55);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(900px 480px at 0% -10%, rgba(224, 122, 31, 0.16), transparent 55%),
+    #0c0a08;
+  color: #faf6f0;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3d342b transparent;
+}
+
+::selection {
+  background: rgba(224, 122, 31, 0.35);
+  color: #fff7ed;
+}
