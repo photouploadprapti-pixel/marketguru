@@ -37,6 +37,39 @@ export const verifySmtp = async (account: SmtpAccount) => {
 }
 
 /**
+ * Send a reply from one connected mailbox.
+ * @param account - SMTP credentials for the mailbox
+ * @param input - Recipient, subject, body, and optional reply headers
+ */
+export const sendMailboxReply = async (
+  account: SmtpAccount,
+  input: {
+    to: string
+    subject: string
+    text: string
+    inReplyTo?: string | null
+  },
+) => {
+  const transport = createTransport(account)
+  const headers: Record<string, string> = {}
+  if (input.inReplyTo) {
+    headers['In-Reply-To'] = input.inReplyTo
+    headers.References = input.inReplyTo
+  }
+  try {
+    await transport.sendMail({
+      from: `"${account.displayName}" <${account.email}>`,
+      to: input.to,
+      subject: input.subject,
+      text: input.text,
+      headers,
+    })
+  } finally {
+    transport.close()
+  }
+}
+
+/**
  * Send a plain-text warmup message.
  */
 export const sendWarmupMail = async (

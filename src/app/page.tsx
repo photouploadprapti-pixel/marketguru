@@ -1,6 +1,7 @@
-import { Flame, MapPin, Search, Send } from 'lucide-react'
+import { Flame, Inbox, Kanban, MapPin, Search, Send } from 'lucide-react'
 
 import { ModuleCard } from '@/components/module-card'
+import { loadDesk } from '@/lib/desk/store'
 import { getDashboardStats, getPersistenceStatus } from '@/lib/warmup/db'
 
 /**
@@ -10,6 +11,8 @@ const HomePage = async () => {
   let mailboxCount = 0
   let warmingCount = 0
   let sentToday = 0
+  let leadCount = 0
+  let replyCount = 0
   let storage = 'not connected'
 
   try {
@@ -25,6 +28,15 @@ const HomePage = async () => {
       : `${persistence.backend} · local file`
   } catch {
     storage = 'unavailable'
+  }
+
+  try {
+    const desk = await loadDesk()
+    leadCount = desk.leads.length
+    replyCount = desk.messages.length
+  } catch {
+    leadCount = 0
+    replyCount = 0
   }
 
   return (
@@ -51,6 +63,14 @@ const HomePage = async () => {
           <p className="text-xs tracking-[0.14em] text-parchment-500 uppercase">Sent today</p>
           <p className="mt-2 font-display text-4xl text-parchment-50">{sentToday}</p>
         </article>
+        <article className="rounded-3xl border border-white/10 bg-ink-900/70 px-5 py-4">
+          <p className="text-xs tracking-[0.14em] text-parchment-500 uppercase">Pipeline</p>
+          <p className="mt-2 font-display text-4xl text-parchment-50">{leadCount}</p>
+        </article>
+        <article className="rounded-3xl border border-white/10 bg-ink-900/70 px-5 py-4">
+          <p className="text-xs tracking-[0.14em] text-parchment-500 uppercase">Replies</p>
+          <p className="mt-2 font-display text-4xl text-parchment-50">{replyCount}</p>
+        </article>
       </section>
       <p className="mt-3 text-xs text-parchment-500">Warmup storage: {storage}</p>
 
@@ -68,6 +88,20 @@ const HomePage = async () => {
           eyebrow="From ShivWeb"
           description="Send templated HTML from a CSV through your own SMTP, then list bounced rows."
           icon={Send}
+        />
+        <ModuleCard
+          href="/pipeline"
+          title="Pipeline"
+          eyebrow="Leads"
+          description="Move a lead from New to Contacted, Replied, Qualified, and Closed/Won."
+          icon={Kanban}
+        />
+        <ModuleCard
+          href="/inbox"
+          title="Inbox"
+          eyebrow="Unibox"
+          description="Read and answer replies from every mailbox, labeled Interested, Not Interested, or Out of Office."
+          icon={Inbox}
         />
         <ModuleCard
           href="/finder"

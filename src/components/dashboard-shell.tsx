@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Flame, LayoutDashboard, MapPin, Search, Send } from 'lucide-react'
+import { Flame, Inbox, Kanban, LayoutDashboard, MapPin, Search, Send } from 'lucide-react'
 
 import { cn } from '@/lib/cn'
 
@@ -10,6 +10,8 @@ const NAV = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/leads', label: 'Place Finder', icon: MapPin },
   { href: '/campaign', label: 'Campaign', icon: Send },
+  { href: '/pipeline', label: 'Pipeline', icon: Kanban },
+  { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/finder', label: 'Email Finder', icon: Search },
   { href: '/warmup', label: 'Warmup', icon: Flame },
 ]
