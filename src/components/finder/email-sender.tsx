@@ -77,31 +77,36 @@ export const EmailSender = ({ foundEmails, onSent }: EmailSenderProps) => {
     }
   }
 
+  const fieldClass = [
+    'w-full rounded-xl border border-white/10 bg-ink-950 px-3 py-2.5 text-sm',
+    'text-parchment-50 outline-none placeholder:text-parchment-500 focus:border-ember-400',
+  ].join(' ')
+
   return (
-    <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/50">
+    <section className="rounded-[1.75rem] border border-white/10 bg-ink-900/80 p-6 shadow-card">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-slate-900">Email Sender</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="font-display text-3xl text-parchment-50">Email Sender</h2>
+        <p className="mt-1 text-sm text-parchment-400">
           Compose a message and send it to your recipient list.
         </p>
       </div>
 
       <div className="mb-4">
-        <label className="mb-1.5 block text-sm font-medium text-slate-700">Recipients</label>
+        <label className="mb-1.5 block text-sm font-medium text-parchment-100">Recipients</label>
         <div className="flex flex-wrap gap-2">
           {recipients.length === 0 && (
-            <span className="text-sm text-slate-400">No recipients added yet.</span>
+            <span className="text-sm text-parchment-500">No recipients added yet.</span>
           )}
           {recipients.map((email) => (
             <span
               key={email}
-              className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-sm text-indigo-700"
+              className="inline-flex items-center gap-1 rounded-full bg-ember-500/15 px-3 py-1 text-sm text-ember-100"
             >
               {email}
               <button
                 type="button"
                 onClick={() => removeRecipient(email)}
-                className="ml-1 text-indigo-400 hover:text-indigo-700"
+                className="ml-1 text-ember-300 hover:text-parchment-50"
                 aria-label={`Remove ${email}`}
               >
                 ×
@@ -118,13 +123,13 @@ export const EmailSender = ({ foundEmails, onSent }: EmailSenderProps) => {
           value={manualEmail}
           onChange={(e) => setManualEmail(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddManual()}
-          className="min-w-[200px] flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className={`min-w-[200px] flex-1 ${fieldClass}`}
         />
         <button
           type="button"
           onClick={handleAddManual}
           disabled={!manualEmail.trim()}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-parchment-100 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Add
         </button>
@@ -133,10 +138,10 @@ export const EmailSender = ({ foundEmails, onSent }: EmailSenderProps) => {
           onClick={handleAddAllFound}
           disabled={foundEmails.length === 0}
           className={cn(
-            'rounded-lg px-4 py-2 text-sm font-medium transition',
+            'rounded-full px-4 py-2 text-sm font-medium transition',
             foundEmails.length === 0
-              ? 'cursor-not-allowed bg-slate-100 text-slate-400'
-              : 'bg-emerald-600 text-white hover:bg-emerald-700',
+              ? 'cursor-not-allowed bg-white/5 text-parchment-500'
+              : 'bg-emerald-500 text-ink-950 hover:bg-emerald-400',
           )}
         >
           Add all found emails ({foundEmails.length})
@@ -144,7 +149,7 @@ export const EmailSender = ({ foundEmails, onSent }: EmailSenderProps) => {
       </div>
 
       <div className="mb-4">
-        <label htmlFor="subject" className="mb-1.5 block text-sm font-medium text-slate-700">
+        <label htmlFor="subject" className="mb-1.5 block text-sm font-medium text-parchment-100">
           Subject
         </label>
         <input
@@ -153,12 +158,12 @@ export const EmailSender = ({ foundEmails, onSent }: EmailSenderProps) => {
           placeholder="Email subject"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className={fieldClass}
         />
       </div>
 
       <div className="mb-4">
-        <label htmlFor="body" className="mb-1.5 block text-sm font-medium text-slate-700">
+        <label htmlFor="body" className="mb-1.5 block text-sm font-medium text-parchment-100">
           Message
         </label>
         <textarea
@@ -167,7 +172,7 @@ export const EmailSender = ({ foundEmails, onSent }: EmailSenderProps) => {
           placeholder="Write your message here…"
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+          className={`${fieldClass} resize-y`}
         />
       </div>
 
@@ -176,10 +181,10 @@ export const EmailSender = ({ foundEmails, onSent }: EmailSenderProps) => {
         onClick={handleSend}
         disabled={loading || recipients.length === 0 || !subject.trim() || !body.trim()}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-medium text-white transition',
+          'inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-medium text-ink-950 transition',
           loading || recipients.length === 0 || !subject.trim() || !body.trim()
-            ? 'cursor-not-allowed bg-indigo-300'
-            : 'bg-indigo-600 hover:bg-indigo-700',
+            ? 'cursor-not-allowed bg-ember-500/40'
+            : 'bg-ember-500 hover:bg-ember-400',
         )}
       >
         {loading ? 'Sending…' : `Send to ${recipients.length} recipient${recipients.length === 1 ? '' : 's'}`}
@@ -189,7 +194,9 @@ export const EmailSender = ({ foundEmails, onSent }: EmailSenderProps) => {
         <p
           className={cn(
             'mt-4 rounded-lg px-3 py-2 text-sm',
-            feedback.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600',
+            feedback.type === 'success'
+              ? 'bg-emerald-500/10 text-emerald-200'
+              : 'bg-rose-500/10 text-rose-200',
           )}
         >
           {feedback.message}
