@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 
+import { actionSaveContacts } from '@/actions/action-contacts'
 import { cn } from '@/lib/cn'
 import type { EmailResult, FindEmailResponse } from '@/types/email'
 
@@ -21,6 +22,7 @@ export const EmailFinder = ({ onResultsChange }: EmailFinderProps) => {
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<EmailResult[]>([])
   const [meta, setMeta] = useState<{ domain: string; hasMxRecords: boolean } | null>(null)
+  const [notice, setNotice] = useState('')
 
   const handleSearch = async () => {
     setError(null)
@@ -142,9 +144,28 @@ export const EmailFinder = ({ onResultsChange }: EmailFinderProps) => {
 
           {verified.length > 0 && (
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-emerald-300">
-                Verified on website ({verified.length})
-              </h3>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-emerald-300">
+                  Verified on website ({verified.length})
+                </h3>
+                <button
+                  type="button"
+                  className="rounded-full bg-white/10 px-3 py-1 text-xs text-parchment-50"
+                  onClick={async () => {
+                    const result = await actionSaveContacts(verified.map((item) => ({
+                      name: `${firstName} ${lastName}`.trim(),
+                      email: item.email,
+                      website: domain,
+                      company: domain,
+                      source: 'finder' as const,
+                    })))
+                    setNotice(result.message)
+                  }}
+                >
+                  Save as contacts
+                </button>
+              </div>
+              {notice ? <p className="mb-2 text-sm text-ember-200">{notice}</p> : null}
               <ul className="space-y-2">
                 {verified.map((item) => (
                   <EmailResultRow key={item.email} item={item} />

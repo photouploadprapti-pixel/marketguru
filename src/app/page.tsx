@@ -1,4 +1,15 @@
-import { Flame, Inbox, Kanban, MapPin, Search, Send } from 'lucide-react'
+import {
+  BarChart3,
+  Eraser,
+  Flame,
+  Inbox,
+  Kanban,
+  ListTree,
+  MapPin,
+  Search,
+  Send,
+  Users,
+} from 'lucide-react'
 
 import { ModuleCard } from '@/components/module-card'
 import { loadDesk } from '@/lib/desk/store'
@@ -13,6 +24,7 @@ const HomePage = async () => {
   let sentToday = 0
   let leadCount = 0
   let replyCount = 0
+  let contactCount = 0
   let storage = 'not connected'
 
   try {
@@ -34,6 +46,7 @@ const HomePage = async () => {
     const desk = await loadDesk()
     leadCount = desk.leads.length
     replyCount = desk.messages.length
+    contactCount = desk.contacts.length
   } catch {
     leadCount = 0
     replyCount = 0
@@ -68,6 +81,10 @@ const HomePage = async () => {
           <p className="mt-2 font-display text-4xl text-parchment-50">{leadCount}</p>
         </article>
         <article className="rounded-3xl border border-white/10 bg-ink-900/70 px-5 py-4">
+          <p className="text-xs tracking-[0.14em] text-parchment-500 uppercase">Contacts</p>
+          <p className="mt-2 font-display text-4xl text-parchment-50">{contactCount}</p>
+        </article>
+        <article className="rounded-3xl border border-white/10 bg-ink-900/70 px-5 py-4">
           <p className="text-xs tracking-[0.14em] text-parchment-500 uppercase">Replies</p>
           <p className="mt-2 font-display text-4xl text-parchment-50">{replyCount}</p>
         </article>
@@ -83,11 +100,46 @@ const HomePage = async () => {
           icon={MapPin}
         />
         <ModuleCard
+          href="/finder"
+          title="Email Finder"
+          eyebrow="From Admin Finder"
+          description="Discover a person's address on a domain, send with Gmail, and track delivery."
+          icon={Search}
+        />
+        <ModuleCard
+          href="/clean"
+          title="Clean CSV"
+          eyebrow="Lists"
+          description="Remove empty and generic addresses such as admin@domain.com, then download or save the rest."
+          icon={Eraser}
+        />
+        <ModuleCard
+          href="/contacts"
+          title="Contacts"
+          eyebrow="Saved people"
+          description="Keep discovered contacts, group them into lists, and block addresses you should not mail."
+          icon={Users}
+        />
+        <ModuleCard
           href="/campaign"
           title="Campaign"
           eyebrow="From ShivWeb"
-          description="Send templated HTML from a CSV through your own SMTP, then list bounced rows."
+          description="Send a saved list or CSV through your SMTP. Bounces are blocked from the next send."
           icon={Send}
+        />
+        <ModuleCard
+          href="/sequences"
+          title="Sequences"
+          eyebrow="Follow-ups"
+          description="Save a {Name} and {City} template, then send a second note only if they stay quiet."
+          icon={ListTree}
+        />
+        <ModuleCard
+          href="/reports"
+          title="Reports"
+          eyebrow="Campaigns"
+          description="See sent, skipped, bounced, replied, and interested counts for each send."
+          icon={BarChart3}
         />
         <ModuleCard
           href="/pipeline"
@@ -102,13 +154,6 @@ const HomePage = async () => {
           eyebrow="Unibox"
           description="Read and answer replies from every mailbox, labeled Interested, Not Interested, or Out of Office."
           icon={Inbox}
-        />
-        <ModuleCard
-          href="/finder"
-          title="Email Finder"
-          eyebrow="From Admin Finder"
-          description="Discover a person's address on a domain, send with Gmail, and track delivery."
-          icon={Search}
         />
         <ModuleCard
           href="/warmup"

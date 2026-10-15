@@ -2,19 +2,23 @@
 
 import { useState, type FormEvent } from 'react'
 
+import { actionSaveContacts } from '@/actions/action-contacts'
 import { PageIntro } from '@/components/page-intro'
 import { downloadCsv } from '@/lib/leads/csv'
-import { isUsableEmail } from '@/lib/leads/usable-email'
+import { guessOwnerName, isUsableEmail } from '@/lib/leads/usable-email'
 import type { MappedPlace } from '@/lib/leads/places'
 
 type LeadRow = {
   name: string
+  owner: string
   email: string
   phone: string
   website: string
   address: string
   maps: string
   city: string
+  rating: number
+  reviews: number
 }
 
 const inputClass =
@@ -35,6 +39,7 @@ export const PlaceFinder = () => {
   const [running, setRunning] = useState(false)
   const [log, setLog] = useState<string[]>([])
   const [rows, setRows] = useState<LeadRow[]>([])
+  const [notice, setNotice] = useState('')
 
   const pushLog = (message: string) => {
     setLog((current) => [...current, message])
@@ -132,12 +137,15 @@ export const PlaceFinder = () => {
 
           collected.push({
             name: current.name,
+            owner: guessOwnerName(email),
             email,
             phone: current.formatted_phone_number,
             website: current.website,
             address: current.formatted_address,
             maps: current.url,
             city,
+            rating: current.rating ?? 0,
+            reviews: current.reviews ?? 0,
           })
           setRows([...collected])
           await new Promise((resolve) => {
@@ -162,19 +170,37 @@ export const PlaceFinder = () => {
     const filename = `${placeType.trim().replace(/\s+/g, '_') || 'leads'}_leads.csv`
     downloadCsv(
       [
-        ['Name', 'Email', 'Phone', 'Website', 'Address', 'More Info', 'City Input'],
+        ['Name', 'Owner', 'Email', 'Phone', 'Website', 'Address', 'More Info', 'City Input', 'Rating', 'Reviews'],
         ...rows.map((row) => [
           row.name,
+          row.owner,
           row.email,
           row.phone,
           row.website,
           row.address,
           row.maps,
           row.city,
+          String(row.rating || ''),
+          String(row.reviews || ''),
         ]),
       ],
       filename,
     )
+  }
+
+  const handleSave = async () => {
+    const result = await actionSaveContacts(rows.map((row) => ({
+      name: row.owner || row.name,
+      company: row.name,
+      email: row.email,
+      phone: row.phone,
+      website: row.website,
+      city: row.city,
+      rating: row.rating,
+      reviews: row.reviews,
+      source: 'places' as const,
+    })))
+    setNotice(result.message)
   }
 
   return (
@@ -230,31 +256,45 @@ export const PlaceFinder = () => {
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-sm text-parchment-300">{rows.length} leads with an email</p>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-ink-950"
-            >
-              Download CSV
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-ink-950"
+              >
+                Download CSV
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="rounded-full bg-white/10 px-4 py-2 text-sm text-parchment-50"
+              >
+                Save as contacts
+              </button>
+            </div>
           </div>
+          {notice ? <p className="mb-3 text-sm text-ember-200">{notice}</p> : null}
           <div className="overflow-x-auto rounded-2xl border border-white/10">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-ink-800 text-parchment-400">
                 <tr>
                   <th className="px-3 py-2 font-medium">Name</th>
+                  <th className="px-3 py-2 font-medium">Owner</th>
                   <th className="px-3 py-2 font-medium">Email</th>
+                  <th className="px-3 py-2 font-medium">Rating</th>
                   <th className="px-3 py-2 font-medium">City</th>
-                  <th className="px-3 py-2 font-medium">Phone</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={`${row.email}-${row.name}`} className="border-t border-white/5">
                     <td className="px-3 py-2 text-parchment-50">{row.name}</td>
+                    <td className="px-3 py-2 text-parchment-300">{row.owner}</td>
                     <td className="px-3 py-2 text-parchment-300">{row.email}</td>
+                    <td className="px-3 py-2 text-parchment-300">
+                      {row.rating ? `${row.rating} (${row.reviews})` : '—'}
+                    </td>
                     <td className="px-3 py-2 text-parchment-300">{row.city}</td>
-                    <td className="px-3 py-2 text-parchment-300">{row.phone}</td>
                   </tr>
                 ))}
               </tbody>

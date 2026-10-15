@@ -16,5 +16,11 @@ export const GET = async (request: Request) => {
 
   const { runWarmupTick } = await import('@/lib/warmup/warmup-engine')
   await runWarmupTick()
+  try {
+    const { runDueSequences } = await import('@/lib/marketing/sequence-runner')
+    await runDueSequences()
+  } catch {
+    // A follow-up failure should not hide a finished warmup cycle.
+  }
   return Response.json({ ok: true, message: 'Warmup cycle finished.' })
 }

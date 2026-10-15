@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
+import { applyInboxSignals } from '@/lib/marketing/apply-inbox'
 import { loadDesk, updateDesk } from '@/lib/desk/store'
 import { pullMailboxReplies } from '@/lib/inbox/sync'
 import { sendMailboxReply } from '@/lib/warmup/smtp'
@@ -18,6 +19,8 @@ export type InboxActionResult = {
 const refresh = () => {
   revalidatePath('/inbox')
   revalidatePath('/pipeline')
+  revalidatePath('/reports')
+  revalidatePath('/contacts')
   revalidatePath('/')
 }
 
@@ -56,6 +59,7 @@ export const actionSyncInbox = async (): Promise<InboxActionResult> => {
             lead.updatedAt = new Date().toISOString()
           }
         }
+        applyInboxSignals(state, pulled)
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Could not read mailbox'

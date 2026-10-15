@@ -3,6 +3,7 @@ import path from 'path'
 
 import { createClient, type Client } from '@libsql/client/web'
 
+import { asMarketing, emptyMarketing, type MarketingState } from '@/lib/marketing/records'
 import type { InboxMessage } from '@/types/inbox'
 import { isReplyIntent } from '@/types/inbox'
 import type { Lead } from '@/types/pipeline'
@@ -11,9 +12,9 @@ import { isLeadStatus } from '@/types/pipeline'
 export type DeskState = {
   leads: Lead[]
   messages: InboxMessage[]
-}
+} & MarketingState
 
-const emptyDesk = (): DeskState => ({ leads: [], messages: [] })
+const emptyDesk = (): DeskState => ({ leads: [], messages: [], ...emptyMarketing() })
 
 let memory: DeskState | null = null
 let client: Client | null = null
@@ -120,7 +121,7 @@ const asDesk = (value: unknown): DeskState => {
     const message = asMessage(item)
     return message ? [message] : []
   }) : []
-  return { leads, messages }
+  return { leads, messages, ...asMarketing(value) }
 }
 
 /**

@@ -2,17 +2,33 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Flame, Inbox, Kanban, LayoutDashboard, MapPin, Search, Send } from 'lucide-react'
+import {
+  BarChart3,
+  Eraser,
+  Flame,
+  Inbox,
+  Kanban,
+  LayoutDashboard,
+  ListTree,
+  MapPin,
+  Search,
+  Send,
+  Users,
+} from 'lucide-react'
 
 import { cn } from '@/lib/cn'
 
 const NAV = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/leads', label: 'Place Finder', icon: MapPin },
+  { href: '/finder', label: 'Email Finder', icon: Search },
+  { href: '/clean', label: 'Clean CSV', icon: Eraser },
+  { href: '/contacts', label: 'Contacts', icon: Users },
   { href: '/campaign', label: 'Campaign', icon: Send },
+  { href: '/sequences', label: 'Sequences', icon: ListTree },
+  { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/pipeline', label: 'Pipeline', icon: Kanban },
   { href: '/inbox', label: 'Inbox', icon: Inbox },
-  { href: '/finder', label: 'Email Finder', icon: Search },
   { href: '/warmup', label: 'Warmup', icon: Flame },
 ]
 
@@ -39,7 +55,7 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
-      <aside className="border-b border-white/10 bg-ink-950/80 lg:min-h-screen lg:border-r lg:border-b-0">
+      <aside className="border-b border-white/10 bg-ink-950/80 lg:max-h-screen lg:min-h-screen lg:overflow-y-auto lg:border-r lg:border-b-0">
         <div className="flex items-center gap-3 px-5 py-5">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-ember-500 text-sm font-semibold text-ink-950">
             MG

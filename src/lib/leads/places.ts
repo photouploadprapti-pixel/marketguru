@@ -14,6 +14,8 @@ const SEARCH_FIELD_MASK = [
   'places.nationalPhoneNumber',
   'places.websiteUri',
   'places.googleMapsUri',
+  'places.rating',
+  'places.userRatingCount',
   'nextPageToken',
 ].join(',')
 const DETAILS_FIELD_MASK = [
@@ -23,6 +25,8 @@ const DETAILS_FIELD_MASK = [
   'nationalPhoneNumber',
   'websiteUri',
   'googleMapsUri',
+  'rating',
+  'userRatingCount',
 ].join(',')
 
 export type MappedPlace = {
@@ -32,6 +36,8 @@ export type MappedPlace = {
   formatted_phone_number: string
   website: string
   url: string
+  rating: number
+  reviews: number
 }
 
 type PlacesResult = {
@@ -58,6 +64,8 @@ const textField = (value: unknown): string => (typeof value === 'string' ? value
  */
 export const mapPlace = (place: Record<string, unknown>): MappedPlace => {
   const displayName = isRecord(place.displayName) ? textField(place.displayName.text) : ''
+  const rating = typeof place.rating === 'number' ? place.rating : 0
+  const reviews = typeof place.userRatingCount === 'number' ? place.userRatingCount : 0
   return {
     place_id: textField(place.id),
     name: displayName,
@@ -65,6 +73,8 @@ export const mapPlace = (place: Record<string, unknown>): MappedPlace => {
     formatted_phone_number: textField(place.nationalPhoneNumber),
     website: textField(place.websiteUri),
     url: textField(place.googleMapsUri),
+    rating,
+    reviews,
   }
 }
 

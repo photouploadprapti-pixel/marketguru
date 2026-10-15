@@ -1,3 +1,4 @@
+import { DomainHealth } from '@/components/warmup/domain-health'
 import { AccountCard } from '@/components/warmup/account-card'
 import { ActivityFeed } from '@/components/warmup/activity-feed'
 import { AddAccountDialog } from '@/components/warmup/add-account-dialog'
@@ -104,6 +105,7 @@ const WarmupPage = async () => {
       </p>
 
       <StatsOverview stats={stats} />
+      <DomainHealth />
 
       <p className="mt-4 text-sm text-parchment-400">
         {warmingCount >= 2

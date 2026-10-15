@@ -4,8 +4,12 @@ import { useState, type FormEvent } from 'react'
 import Papa from 'papaparse'
 
 import { PageIntro } from '@/components/page-intro'
+import { actionSaveCampaignReport } from '@/actions/action-marketing'
+import { actionSuppressEmails } from '@/actions/action-contacts'
 import { cn } from '@/lib/cn'
 import { downloadCsv, fillTemplate, parseRowIndices } from '@/lib/leads/csv'
+import { isUsableEmail } from '@/lib/leads/usable-email'
+import type { ContactList, MailTemplate, SavedContact } from '@/types/marketing'
 
 type LeadRow = Record<string, string>
 
@@ -31,10 +35,17 @@ const readCsv = (file: File): Promise<LeadRow[]> =>
     })
   })
 
+type CampaignDeskProps = {
+  templates: MailTemplate[]
+  lists: ContactList[]
+  contacts: SavedContact[]
+}
+
 /**
  * CSV campaign sender and bounce matcher from the Places toolkit.
+ * @param props - Saved templates, lists, and contacts
  */
-export const CampaignDesk = () => {
+export const CampaignDesk = ({ templates, lists, contacts }: CampaignDeskProps) => {
   const [tab, setTab] = useState<'send' | 'bounces'>('send')
 
   return (
@@ -42,7 +53,7 @@ export const CampaignDesk = () => {
       <PageIntro
         kicker="Campaign"
         title="Send and check bounces"
-        description="Upload a Place Finder CSV, send HTML mail through your SMTP server, then scan the inbox for delivery failures."
+        description="Send HTML mail from a CSV or a saved list. Blocked and generic addresses are skipped, and the result is saved as a report."
       />
       <div className="mb-6 flex gap-2">
         {([
@@ -62,16 +73,22 @@ export const CampaignDesk = () => {
           </button>
         ))}
       </div>
-      {tab === 'send' ? <SendPanel /> : <BouncePanel />}
+      {tab === 'send' ? (
+        <SendPanel templates={templates} lists={lists} contacts={contacts} />
+      ) : (
+        <BouncePanel />
+      )}
     </div>
   )
 }
 
 /**
  * Bulk HTML sender that posts one message at a time.
+ * @param props - Templates, lists, and contacts the sender can use
  */
-const SendPanel = () => {
+const SendPanel = ({ templates, lists, contacts }: CampaignDeskProps) => {
   const [file, setFile] = useState<File | null>(null)
+  const [listId, setListId] = useState('')
   const [range, setRange] = useState('1-10')
   const [subject, setSubject] = useState(
     'Adding a premium Pilates channel to {Name} (Zero extra staff needed)',
@@ -90,12 +107,25 @@ const SendPanel = () => {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!file) return
+    if (!file && !listId) {
+      pushLog('Choose a saved list or a CSV file.')
+      return
+    }
     setRunning(true)
-    setLog(['Parsing CSV file...'])
+    setLog(['Preparing recipients...'])
 
     try {
-      const data = await readCsv(file)
+      const listed: LeadRow[] = contacts
+        .filter((contact) => contact.listIds.includes(listId))
+        .map((contact) => ({
+          Name: contact.name || contact.company || 'Partner',
+          Email: contact.email,
+          City: contact.city,
+          'City Input': contact.city,
+          Phone: contact.phone,
+          Website: contact.website,
+        }))
+      const data: LeadRow[] = listId ? listed : await readCsv(file as File)
       pushLog(`Loaded ${data.length} rows.`)
       const selected = parseRowIndices(range, data.length)
       if (!selected.length) {
@@ -108,19 +138,22 @@ const SendPanel = () => {
       const wait = Number.parseInt(delayMs, 10) || 30000
       let successCount = 0
       let failCount = 0
+      let skipCount = 0
+      const recipients: string[] = []
 
       for (let index = 0; index < selected.length; index += 1) {
         const rowIndex = selected[index] ?? 0
         const row = data[rowIndex] ?? {}
         const recipient = row.Email
         const name = row.Name || row['Center Name'] || 'Partner'
-        if (!recipient || !recipient.includes('@')) {
-          pushLog(`[Row ${rowIndex + 1}] Skipped: no valid email for ${name}`)
-          failCount += 1
+        if (!recipient || !isUsableEmail(recipient)) {
+          pushLog(`[Row ${rowIndex + 1}] Skipped: empty or generic email for ${name}`)
+          skipCount += 1
           continue
         }
 
         pushLog(`[Row ${rowIndex + 1}] Sending to ${name} (${recipient})...`)
+        let sentThis = false
         try {
           const response = await fetch('/api/campaign/send', {
             method: 'POST',
@@ -135,20 +168,31 @@ const SendPanel = () => {
               body: fillTemplate(body, row),
             }),
           })
-          const result = (await response.json()) as { success?: boolean; error?: string }
-          if (response.ok && result.success) {
+          const result = (await response.json()) as {
+            success?: boolean
+            error?: string
+            suppressed?: boolean
+          }
+          if (result.suppressed) {
+            pushLog(`[skip] ${result.error ?? 'Blocked.'}`)
+            skipCount += 1
+          } else if (response.ok && result.success) {
             pushLog('[ok] Sent.')
             successCount += 1
+            recipients.push(recipient)
+            sentThis = true
           } else {
             pushLog(`[x] Failed: ${result.error ?? 'Unknown error'}`)
             failCount += 1
+            sentThis = true
           }
         } catch (error) {
           pushLog(`[x] ${error instanceof Error ? error.message : 'Request failed'}`)
           failCount += 1
+          sentThis = true
         }
 
-        if (index < selected.length - 1) {
+        if (sentThis && index < selected.length - 1) {
           pushLog(`Waiting ${wait / 1000}s before the next email...`)
           await new Promise((resolve) => {
             setTimeout(resolve, wait)
@@ -156,7 +200,16 @@ const SendPanel = () => {
         }
       }
 
-      pushLog(`Completed. Success: ${successCount}, Failed: ${failCount}`)
+      const report = await actionSaveCampaignReport({
+        name: listId ? (lists.find((item) => item.id === listId)?.name ?? 'List') : 'CSV campaign',
+        sent: successCount,
+        failed: failCount,
+        skipped: skipCount,
+        recipients,
+      })
+      pushLog(
+        `Completed. Sent: ${successCount}, Failed: ${failCount}, Skipped: ${skipCount}. ${report.message}`,
+      )
     } catch (error) {
       pushLog(error instanceof Error ? error.message : 'Could not read the CSV.')
     } finally {
@@ -170,11 +223,43 @@ const SendPanel = () => {
       className="max-w-2xl rounded-[1.75rem] border border-white/10 bg-ink-900/80 p-6 shadow-card"
     >
       <label className="mb-4 block text-sm">
+        <span className="mb-1.5 block font-medium text-parchment-100">Saved list</span>
+        <select
+          className={inputClass}
+          value={listId}
+          onChange={(event) => setListId(event.target.value)}
+        >
+          <option value="">Use a CSV instead</option>
+          {lists.map((list) => (
+            <option key={list.id} value={list.id}>
+              {list.name} ({contacts.filter((item) => item.listIds.includes(list.id)).length})
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="mb-4 block text-sm">
+        <span className="mb-1.5 block font-medium text-parchment-100">Saved template</span>
+        <select
+          className={inputClass}
+          defaultValue=""
+          onChange={(event) => {
+            const template = templates.find((item) => item.id === event.target.value)
+            if (!template) return
+            setSubject(template.subject)
+            setBody(template.body)
+          }}
+        >
+          <option value="">Keep the subject and body below</option>
+          {templates.map((template) => (
+            <option key={template.id} value={template.id}>{template.name}</option>
+          ))}
+        </select>
+      </label>
+      <label className="mb-4 block text-sm">
         <span className="mb-1.5 block font-medium text-parchment-100">CSV from Place Finder</span>
         <input
           type="file"
           accept=".csv"
-          required
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           className="block w-full text-sm text-parchment-300"
         />
@@ -286,6 +371,8 @@ const BouncePanel = () => {
 
       const hits = data.filter((row) => failed.has((row.Email ?? '').toLowerCase().trim()))
       pushLog(`Matched ${hits.length} failed delivery records.`)
+      const blocked = await actionSuppressEmails([...failed], 'bounce')
+      pushLog(blocked.message)
       setMatched(hits)
     } catch (error) {
       pushLog(error instanceof Error ? error.message : 'Scan failed.')

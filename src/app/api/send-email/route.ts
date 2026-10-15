@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+import { loadDesk } from '@/lib/desk/store'
+import { isUsableEmail } from '@/lib/leads/usable-email'
 import { createRecordId } from '@/lib/finder/delivery-utils'
 import { getUndeliverableReason } from '@/lib/finder/email-verifier'
 import { sendBulkEmail } from '@/lib/finder/mailer'
@@ -28,11 +30,23 @@ export const POST = async (request: Request) => {
     }
 
     const validRecipients = [...new Set(recipients.map((r) => r.trim().toLowerCase()))].filter(
-      (email) => EMAIL_REGEX.test(email),
+      (email) => EMAIL_REGEX.test(email) && isUsableEmail(email),
     )
 
     if (!validRecipients.length) {
       return NextResponse.json({ error: 'No valid email addresses provided.' }, { status: 400 })
+    }
+
+    const desk = await loadDesk()
+    const blocked = new Set(desk.suppressions.map((item) => item.email))
+    const skipped = validRecipients.filter((email) => blocked.has(email))
+    const allowed = validRecipients.filter((email) => !blocked.has(email))
+
+    if (!allowed.length) {
+      return NextResponse.json(
+        { error: 'Every recipient is on the do-not-contact list.' },
+        { status: 400 },
+      )
     }
 
     const trimmedSubject = subject.trim()
@@ -41,7 +55,7 @@ export const POST = async (request: Request) => {
     const sentAt = new Date().toISOString()
 
     const { results, authError } = await sendBulkEmail(
-      validRecipients,
+      allowed,
       trimmedSubject,
       trimmedBody,
     )
@@ -91,7 +105,7 @@ export const POST = async (request: Request) => {
       records,
       message:
         failed.length === 0
-          ? `Successfully sent to ${sent} recipient${sent === 1 ? '' : 's'}. Check delivery status below.`
+          ? `Successfully sent to ${sent} recipient${sent === 1 ? '' : 's'}.${skipped.length ? ` Skipped ${skipped.length} blocked.` : ''} Check delivery status below.`
           : `Sent to ${sent} recipient${sent === 1 ? '' : 's'}. Failed: ${failed.join(', ')}`,
     }
 

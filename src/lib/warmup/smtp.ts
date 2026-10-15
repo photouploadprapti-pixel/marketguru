@@ -70,6 +70,28 @@ export const sendMailboxReply = async (
 }
 
 /**
+ * Send an HTML note from one connected mailbox.
+ * @param account - SMTP credentials for the mailbox
+ * @param input - Recipient, subject, and HTML body
+ */
+export const sendMailboxHtml = async (
+  account: SmtpAccount,
+  input: { to: string; subject: string; html: string },
+) => {
+  const transport = createTransport(account)
+  try {
+    await transport.sendMail({
+      from: `"${account.displayName}" <${account.email}>`,
+      to: input.to,
+      subject: input.subject,
+      html: input.html,
+    })
+  } finally {
+    transport.close()
+  }
+}
+
+/**
  * Send a plain-text warmup message.
  */
 export const sendWarmupMail = async (

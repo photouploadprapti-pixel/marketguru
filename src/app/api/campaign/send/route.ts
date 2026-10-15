@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 
+import { loadDesk } from '@/lib/desk/store'
+import { isUsableEmail } from '@/lib/leads/usable-email'
+
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
@@ -44,6 +47,24 @@ export const POST = async (request: Request) => {
         { success: false, error: 'Host, user, password, recipient, and subject are required.' },
         { status: 400 },
       )
+    }
+
+    if (!isUsableEmail(to)) {
+      return NextResponse.json({
+        success: false,
+        suppressed: true,
+        error: 'That address is empty or a generic role address.',
+      })
+    }
+
+    const desk = await loadDesk()
+    const blocked = desk.suppressions.some((item) => item.email === to.toLowerCase())
+    if (blocked) {
+      return NextResponse.json({
+        success: false,
+        suppressed: true,
+        error: 'On the do-not-contact list.',
+      })
     }
 
     const transporter = nodemailer.createTransport({
