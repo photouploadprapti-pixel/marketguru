@@ -29,6 +29,8 @@ declare module 'imapflow' {
       secure: boolean
       auth: { user: string; pass: string }
       logger: boolean
+      servername?: string
+      connectionTimeout?: number
     })
 
     usable: boolean

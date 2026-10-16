@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 
+import { resolveMailHost } from '@/lib/warmup/resolve-host'
 import type { EmailAccount } from '@/types/account'
 
 export type SmtpAccount = Pick<
@@ -11,12 +12,17 @@ export type SmtpAccount = Pick<
 
 /**
  * Create a nodemailer transport for one mailbox.
+ * @param account - SMTP credentials for the mailbox
  */
-const createTransport = (account: SmtpAccount) => {
+const createTransport = async (account: SmtpAccount) => {
+  const host = await resolveMailHost(account.smtpHost)
   return nodemailer.createTransport({
-    host: account.smtpHost,
+    host,
     port: account.smtpPort,
     secure: account.smtpSecure || account.smtpPort === 465,
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    tls: { servername: account.smtpHost },
     auth: {
       user: account.email,
       pass: account.password,
@@ -28,7 +34,7 @@ const createTransport = (account: SmtpAccount) => {
  * Verify SMTP credentials without sending mail.
  */
 export const verifySmtp = async (account: SmtpAccount) => {
-  const transport = createTransport(account)
+  const transport = await createTransport(account)
   try {
     await transport.verify()
   } finally {
@@ -50,7 +56,7 @@ export const sendMailboxReply = async (
     inReplyTo?: string | null
   },
 ) => {
-  const transport = createTransport(account)
+  const transport = await createTransport(account)
   const headers: Record<string, string> = {}
   if (input.inReplyTo) {
     headers['In-Reply-To'] = input.inReplyTo
@@ -78,7 +84,7 @@ export const sendMailboxHtml = async (
   account: SmtpAccount,
   input: { to: string; subject: string; html: string },
 ) => {
-  const transport = createTransport(account)
+  const transport = await createTransport(account)
   try {
     await transport.sendMail({
       from: `"${account.displayName}" <${account.email}>`,
@@ -98,7 +104,7 @@ export const sendWarmupMail = async (
   account: SmtpAccount,
   input: { to: string; subject: string; text: string; token: string },
 ) => {
-  const transport = createTransport(account)
+  const transport = await createTransport(account)
   try {
     await transport.sendMail({
       from: `"${account.displayName}" <${account.email}>`,

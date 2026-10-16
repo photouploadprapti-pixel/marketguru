@@ -48,6 +48,9 @@ const connectionMessage = (error: unknown) => {
   if (/ECONNREFUSED|:445\b/i.test(raw)) {
     return 'Connection refused. Port 445 is not SMTP — it is Windows file sharing. Use 465 with SSL checked, or 587 with SSL unchecked.'
   }
+  if (/EBUSY|EAI_AGAIN|ENOTFOUND|Could not resolve/i.test(raw)) {
+    return 'The mail host could not be resolved. Check the SMTP and IMAP host names, then try the connection again.'
+  }
   return raw
 }
 

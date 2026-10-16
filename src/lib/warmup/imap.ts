@@ -1,6 +1,7 @@
 import { ImapFlow } from 'imapflow'
 
 import { extractWarmupToken } from '@/lib/warmup/email-templates'
+import { resolveMailHost } from '@/lib/warmup/resolve-host'
 import type { EmailAccount } from '@/types/account'
 
 export type ImapAccount = Pick<
@@ -24,8 +25,10 @@ const SPAM_FOLDERS = ['Junk', 'Spam', 'Junk Email', '[Gmail]/Spam']
  * Open an IMAP session for one mailbox.
  */
 const connect = async (account: ImapAccount) => {
+  const host = await resolveMailHost(account.imapHost)
   const client = new ImapFlow({
-    host: account.imapHost,
+    host,
+    servername: account.imapHost,
     port: account.imapPort,
     secure: account.imapSecure || account.imapPort === 993,
     auth: {
@@ -33,6 +36,7 @@ const connect = async (account: ImapAccount) => {
       pass: account.password,
     },
     logger: false,
+    connectionTimeout: 20000,
   })
   await client.connect()
   return client
